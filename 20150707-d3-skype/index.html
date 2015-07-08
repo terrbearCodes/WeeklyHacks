@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>D3.js &amp; Skype</title>
+	<style type="text/css">
+		body{
+			background-color: #9a4;
+		}
+		svg{
+			background-color: white;
+		}
+		.axis path,
+		.axis line {
+			fill: none;
+			stroke: grey;
+			stroke-width: 1;
+			shape-rendering: crispEdges;
+		}
+	</style>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+</head>
+<body>
+<div id="container"></div>
+<script type="text/javascript">
+	var conversations = {};
+	var dataList = [];
+
+	//Date parsing functions
+	var format = d3.time.format("%d-%b-%y");
+	var	parseDate = format.parse;
+
+	// Set the ranges
+	var	x = d3.time.scale().range([0, 950]);
+	var	y = d3.scale.linear().range([0, 450]);
+	 
+	// Define the axes
+	var	xAxis = d3.svg.axis().scale(x).orient("top").ticks(5);
+	var	yAxis = d3.svg.axis().scale(y).orient("left").ticks(5);
+
+	function calculateMomDepth(thread){
+		for(var i=0; i<thread.length; i++){
+			var message = thread[i].message;
+			if(message.search(/your mom/i) > -1){
+				return i
+			}
+		}
+		return 0;
+	}
+
+	//setup your canvas
+	var	svg = d3.select("#container")
+				.append("svg")
+					.attr("width", 1000)
+					.attr("height", 500)
+					.append("g")
+					.attr("transform", "translate(35,25)");
+
+	
+
+	// Get the data
+	d3.csv("redacted.csv", function(error, data) {
+		data.forEach(function(d){
+			//create a map of conversations by date
+			d.timestamp = +d.timestamp;
+			d.date = new Date(d.timestamp * 1000);
+			var thread = conversations[format(d.date)] || [];
+			thread.push(d);
+			conversations[format(d.date)] = thread;
+		});
+
+		for(var date in conversations){
+			var row = {}
+			row.dateString = date;
+			row.date = parseDate(date);
+			row.thread = conversations[date];
+			row.momDepth = calculateMomDepth(conversations[date]);
+			if(row.momDepth > 0) // only push conversations where your mom pops up
+				dataList.push(row);
+		}
+
+		// Scale the range of the data
+		x.domain(d3.extent(dataList, function(d) { return d.date; }));
+		y.domain([0, d3.max(dataList, function(d) { return d.momDepth || 0; })]);
+
+		// Add the X Axis
+		svg.append("g")		
+			.attr("class", "x axis")
+			.call(xAxis);
+	 
+		// Add the Y Axis
+		svg.append("g")		
+			.attr("class", "y axis")
+			.call(yAxis);
+
+		svg.selectAll(".dot")
+	      .data(dataList)
+		  .enter().append("circle")
+	      .attr("r", 4)
+	      .attr("cx", function(d){ return x(d.date); })
+	      .attr("cy", function(d){ return y(d.momDepth)})
+	      .attr("fill", function(d){ 
+	      	return {"T": "#EEA941", "S": "#47FDE2", "D": "#FEABC8"}[d.thread[d.momDepth].author] 
+	      })
+	});
+</script>
+</body>
+</html>
