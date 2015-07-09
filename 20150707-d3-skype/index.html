@@ -44,7 +44,7 @@
 				return i
 			}
 		}
-		return 0;
+		return null;
 	}
 
 	//setup your canvas
@@ -92,10 +92,14 @@
 			.attr("class", "y axis")
 			.call(yAxis);
 
-		svg.selectAll(".dot")
+		svg.selectAll("circle")
 	      .data(dataList)
 		  .enter().append("circle")
-	      .attr("r", 4)
+	      .attr("r", 0)
+	      .attr("cx", 0)
+	      .attr("cy", 0)
+	      .transition().delay(function(d,i){ return i * Math.random() * 50; })
+	      .attr("r", 5)
 	      .attr("cx", function(d){ return x(d.date); })
 	      .attr("cy", function(d){ return y(d.momDepth)})
 	      .attr("fill", function(d){ 
